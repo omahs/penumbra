@@ -38,7 +38,6 @@ impl FromStr for Vote {
             "yes" | "y" => Ok(Vote::Yes),
             "no" | "n" => Ok(Vote::No),
             "abstain" | "a" => Ok(Vote::Abstain),
-            "veto" | "noveto" | "nowithveto" | "v" => Ok(Vote::NoWithVeto),
             _ => Err(anyhow::anyhow!("invalid vote: {}", s)),
         }
     }
@@ -50,7 +49,6 @@ impl Display for Vote {
             Vote::Yes => write!(f, "yes"),
             Vote::No => write!(f, "no"),
             Vote::Abstain => write!(f, "abstain"),
-            Vote::NoWithVeto => write!(f, "no_with_veto"),
             // Invalid vote, this is unreachable because it should
             // never be allowed to be deserialized successfully.
             Vote::Unspecified => unreachable!(),
