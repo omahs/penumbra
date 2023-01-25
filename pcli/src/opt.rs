@@ -2,7 +2,7 @@ use crate::{
     box_grpc_svc::{self, BoxGrpcService},
     legacy, App, Command,
 };
-use anyhow::{Context, Result};
+use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
@@ -35,11 +35,11 @@ pub struct Opt {
     #[clap(
         short,
         long,
-        default_value = "testnet.penumbra.zone",
+        default_value = "https://grpc.testnet.penumbra.zone",
         env = "PENUMBRA_NODE_HOSTNAME",
-        parse(try_from_str = url::Host::parse)
+        parse(try_from_str = url::Url::parse)
     )]
-    node: url::Host,
+    node: Url,
     /// The port to use to speak to pd's gRPC server.
     #[clap(long, default_value_t = 8080, env = "PENUMBRA_PD_PORT")]
     pd_port: u16,
@@ -90,12 +90,7 @@ impl Opt {
             None
         };
 
-        let mut pd_url = format!("http://{}", self.node)
-            .parse::<Url>()
-            .with_context(|| format!("Invalid node URL: {}", self.node))?;
-        pd_url
-            .set_port(Some(self.pd_port))
-            .expect("pd URL will not be `file://`");
+        let pd_url = self.node;
 
         let app = App {
             view,
@@ -123,9 +118,9 @@ impl Opt {
             let path = self.data_path.join(crate::VIEW_FILE_NAME);
             tracing::info!(%path, "using local view service");
 
-            let svc =
-                ViewService::load_or_initialize(path, fvk, self.node.to_string(), self.pd_port)
-                    .await?;
+            tracing::debug!("Connecting to URL: {}", &self.node);
+            let svc = ViewService::load_or_initialize(path, fvk, self.node.clone()).await?;
+            tracing::debug!("ALL DONE");
 
             // Now build the view and custody clients, doing gRPC with ourselves
             let svc = ViewProtocolServiceServer::new(svc);
